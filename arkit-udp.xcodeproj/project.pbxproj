@@ -10,9 +10,22 @@
 		52590BC82DFF6F5800DFD518 /* arkit-udp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "arkit-udp.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		52590CB02DFF77EE00DFD518 /* Exceptions for "arkit-udp" folder in "arkit-udp" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 52590BC72DFF6F5800DFD518 /* arkit-udp */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		52590BCA2DFF6F5800DFD518 /* arkit-udp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				52590CB02DFF77EE00DFD518 /* Exceptions for "arkit-udp" folder in "arkit-udp" target */,
+			);
 			path = "arkit-udp";
 			sourceTree = "<group>";
 		};
@@ -254,8 +267,10 @@
 				DEVELOPMENT_ASSET_PATHS = "\"arkit-udp/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "ARKit UDP";
+				INFOPLIST_FILE = "arkit-udp/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "ARKit-UDP";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSCameraUsageDescription = "This app uses the camera to capture face tracking data to forward via UDP.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -287,8 +302,10 @@
 				DEVELOPMENT_ASSET_PATHS = "\"arkit-udp/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "ARKit UDP";
+				INFOPLIST_FILE = "arkit-udp/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "ARKit-UDP";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSCameraUsageDescription = "This app uses the camera to capture face tracking data to forward via UDP.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
