@@ -121,8 +121,8 @@ struct ContentView: View {
                                     .onAppear() {
                                         if integrations.faceTrackingEnabled {
                                             AVCaptureDevice.requestAccess(for: .video) { granted in
-                                                if !granted {
-                                                    integrations.faceTrackingEnabled = false
+                                                DispatchQueue.main.async {
+                                                    integrations.faceTrackingEnabled = granted
                                                 }
                                             }
                                         }
@@ -130,8 +130,8 @@ struct ContentView: View {
                                     .onChange(of: integrations.faceTrackingEnabled) {
                                         if integrations.faceTrackingEnabled {
                                             AVCaptureDevice.requestAccess(for: .video) { granted in
-                                                if !granted {
-                                                    integrations.faceTrackingEnabled = false
+                                                DispatchQueue.main.async {
+                                                    integrations.faceTrackingEnabled = granted
                                                 }
                                             }
                                         }
