@@ -6,8 +6,9 @@
 //
 
 import SwiftUI
+import ARKit
 
-class Integrations : ObservableObject {    
+class Integrations : ObservableObject {
     @AppStorage("ContentView.faceTrackingEnabled") private var faceTrackingEnabledBool = false
     
     var faceTrackingEnabled: Bool {
@@ -79,8 +80,13 @@ struct ContentView: View {
         NavigationView {
             Form {
                 Section(header: Text("Face Tracking"), content: {
-                    Toggle(isOn: $integrations.faceTrackingEnabled) {
+                    if ARFaceTrackingConfiguration.isSupported {
+                        Toggle(isOn: $integrations.faceTrackingEnabled) {
                             Text("Enabled")
+                        }
+                    } else {
+                        Text("This device does not support face tracking.")
+                            .foregroundColor(.red)
                     }
                 })
                 
