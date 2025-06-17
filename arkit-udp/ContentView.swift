@@ -8,13 +8,149 @@
 import SwiftUI
 import ARKit
 
-class Integrations : ObservableObject {
+extension ARFaceAnchor {
+    func getBlendShape(blendShapeLocation: ARFaceAnchor.BlendShapeLocation) -> NSNumber? {
+        if let blendShape = self.blendShapes.first(where: {$0.key == blendShapeLocation}) {
+            return blendShape.value
+        } else {
+            return nil
+        }
+    }
+}
+
+enum EyePosition {
+    case neutral, up, down, left, right
+    
+    func title() -> String {
+        switch self {
+        case .neutral: return "Neutral"
+        case .up: return "Up"
+        case .down: return "Down"
+        case .left: return "Left"
+        case .right: return "Right"
+        }
+    }
+    
+    func systemImage() -> String {
+        switch self {
+        case .neutral: return "circle"
+        case .up: return "arrow.up"
+        case .down: return "arrow.down"
+        case .left: return "arrow.left"
+        case .right: return "arrow.right"
+        }
+    }
+    
+    func update(arFaceAnchor: ARFaceAnchor, leftBlendShapeLocation: ARFaceAnchor.BlendShapeLocation, rightBlendShapeLocation: ARFaceAnchor.BlendShapeLocation, upBlendShapeLocation: ARFaceAnchor.BlendShapeLocation, downBlendShapeLocation: ARFaceAnchor.BlendShapeLocation) -> EyePosition? {
+        
+        switch self {
+        case .up:
+            if let value = arFaceAnchor.getBlendShape(blendShapeLocation: upBlendShapeLocation), value.compare(0.05) == .orderedAscending {
+                return self
+            }
+        case .down:
+            if let value = arFaceAnchor.getBlendShape(blendShapeLocation: downBlendShapeLocation), value.compare(0.05) == .orderedAscending {
+                return self
+            }
+        case .left:
+            if let value = arFaceAnchor.getBlendShape(blendShapeLocation: leftBlendShapeLocation), value.compare(0.05) == .orderedAscending {
+                return self
+            }
+        case .right:
+            if let value = arFaceAnchor.getBlendShape(blendShapeLocation: rightBlendShapeLocation), value.compare(0.05) == .orderedAscending {
+                return self
+            }
+        case .neutral: break
+        }
+        
+        if let value = arFaceAnchor.getBlendShape(blendShapeLocation: upBlendShapeLocation), value.compare(0.15) == .orderedDescending {
+            return .up
+        }
+        
+        if let value = arFaceAnchor.getBlendShape(blendShapeLocation: downBlendShapeLocation), value.compare(0.15) == .orderedDescending {
+            return .down
+        }
+        
+        if let value = arFaceAnchor.getBlendShape(blendShapeLocation: leftBlendShapeLocation), value.compare(0.15) == .orderedDescending {
+            return .left
+        }
+        
+        if let value = arFaceAnchor.getBlendShape(blendShapeLocation: rightBlendShapeLocation), value.compare(0.15) == .orderedDescending {
+            return .right
+        }
+        
+        return .neutral
+    }
+}
+
+enum EyeShape {
+    case open, halfClosed, closed, wide
+    
+    func title() -> String {
+        switch self {
+        case .open: return "Open"
+        case .halfClosed: return "Half Closed"
+        case .closed: return "Closed"
+        case .wide: return "Wide"
+        }
+    }
+    
+    func systemImage() -> String {
+        switch self {
+        case .open: "eye"
+        case .halfClosed: "eye.slash"
+        case .closed: "eyebrow"
+        case .wide: "field.of.view.wide"
+        }
+    }
+    
+    func update(arFaceAnchor: ARFaceAnchor, blinkBlendShapeLocation: ARFaceAnchor.BlendShapeLocation, wideBlendShapeLocation: ARFaceAnchor.BlendShapeLocation) -> EyeShape? {
+        var output = self
+        
+        if output == .closed, let value = arFaceAnchor.getBlendShape(blendShapeLocation: blinkBlendShapeLocation), value.compare(0.5) == .orderedAscending {
+            output = .halfClosed
+        }
+        
+        if output == .halfClosed, let value = arFaceAnchor.getBlendShape(blendShapeLocation: blinkBlendShapeLocation), value.compare(0.1) == .orderedAscending {
+            output = .open
+        }
+        
+        if output == .open, let value = arFaceAnchor.getBlendShape(blendShapeLocation: wideBlendShapeLocation), value.compare(0.15) == .orderedDescending {
+            output = .wide
+        }
+        
+        if output == .wide, let value = arFaceAnchor.getBlendShape(blendShapeLocation: wideBlendShapeLocation), value.compare(0.1) == .orderedAscending {
+            output = .open
+        }
+        
+        if output == .open, let value = arFaceAnchor.getBlendShape(blendShapeLocation: blinkBlendShapeLocation), value.compare(0.2) == .orderedDescending {
+            output = .halfClosed
+        }
+        
+        if output == .halfClosed, let value = arFaceAnchor.getBlendShape(blendShapeLocation: blinkBlendShapeLocation), value.compare(0.75) == .orderedDescending {
+            output = .closed
+        }
+        
+        return output
+    }
+}
+
+class Integrations : NSObject, ObservableObject, ARSessionDelegate {
+    var isSmiling = false
+    var trackingIdentifier: UUID?
+    var leftEyePosition: EyePosition?
+    var leftEyeShape: EyeShape?
+    var rightEyePosition: EyePosition?
+    var rightEyeShape: EyeShape?
+    private var arSession: ARSession?
+    
     @AppStorage("ContentView.faceTrackingEnabled") private var faceTrackingEnabledBool = false
     
     var faceTrackingEnabled: Bool {
         get { self.faceTrackingEnabledBool }
         set {
             self.faceTrackingEnabledBool = newValue
+            applySettings(faceTrackingEnabled: faceTrackingEnabled)
         }
     }
     
@@ -71,6 +207,73 @@ class Integrations : ObservableObject {
             self.portInt = newValue.map { Int($0) }
         }
     }
+    
+    override init () {
+        super.init()
+        applySettings(faceTrackingEnabled: faceTrackingEnabled)
+    }
+    
+    deinit {
+        applySettings(faceTrackingEnabled: false)
+    }
+    
+    private func applySettings(faceTrackingEnabled: Bool) {
+        if faceTrackingEnabled && ARFaceTrackingConfiguration.isSupported && AVCaptureDevice.authorizationStatus(for: .video) == .authorized {
+            if arSession == nil {
+                let newARSession = ARSession()
+                newARSession.delegate = self
+                newARSession.run(ARFaceTrackingConfiguration())
+                arSession = newARSession
+            }
+        } else if let arSession = self.arSession {
+            arSession.pause()
+            self.arSession = nil
+            self.trackingIdentifier = nil
+            self.leftEyePosition = nil
+            self.leftEyeShape = nil
+            self.rightEyePosition = nil
+            self.rightEyeShape = nil
+            objectWillChange.send()
+        }
+    }
+    
+    func session(_ session: ARSession, didUpdate anchors: [ARAnchor]) {
+        for anchor in anchors {
+            if let arFaceAnchor = anchor as? ARFaceAnchor {
+                if self.trackingIdentifier == nil || anchor.identifier == self.trackingIdentifier {
+                    let previousLeftEyePosition = leftEyePosition
+                    leftEyePosition = (leftEyePosition ?? .neutral).update(arFaceAnchor: arFaceAnchor, leftBlendShapeLocation: .eyeLookOutRight, rightBlendShapeLocation: .eyeLookInRight,  upBlendShapeLocation: .eyeLookUpRight, downBlendShapeLocation: .eyeLookDownRight)
+                    
+                    let previousLeftEyeShape = leftEyeShape
+                    leftEyeShape = (leftEyeShape ?? .open).update(arFaceAnchor: arFaceAnchor, blinkBlendShapeLocation: .eyeBlinkRight, wideBlendShapeLocation: .eyeWideRight)
+                    
+                    let previousRightEyePosition = rightEyePosition
+                    rightEyePosition = (rightEyePosition ?? .neutral).update(arFaceAnchor: arFaceAnchor, leftBlendShapeLocation: .eyeLookInLeft, rightBlendShapeLocation: .eyeLookOutLeft, upBlendShapeLocation: .eyeLookUpLeft, downBlendShapeLocation: .eyeLookDownLeft)
+                    
+                    let previousRightEyeShape = rightEyeShape
+                    rightEyeShape = (rightEyeShape ?? .open).update(arFaceAnchor: arFaceAnchor, blinkBlendShapeLocation: .eyeBlinkLeft, wideBlendShapeLocation: .eyeWideLeft)
+                    
+                    let previousTrackingIdentifier = trackingIdentifier
+                    trackingIdentifier = arFaceAnchor.identifier
+                    
+                    let changed = leftEyePosition != previousLeftEyePosition || leftEyeShape != previousLeftEyeShape || rightEyePosition != previousRightEyePosition || rightEyeShape != previousRightEyeShape || trackingIdentifier != previousTrackingIdentifier
+                    
+                    if changed {
+                        objectWillChange.send()
+                    }
+                }
+            }
+        }
+    }
+    
+    func session(_ session: ARSession, didRemove anchors: [ARAnchor]) {
+        for anchor in anchors {
+            if self.trackingIdentifier == anchor.identifier {
+                self.trackingIdentifier = nil
+                objectWillChange.send()
+            }
+        }
+    }
 }
 
 struct ContentView: View {
@@ -83,8 +286,24 @@ struct ContentView: View {
                     if ARFaceTrackingConfiguration.isSupported {
                         switch AVCaptureDevice.authorizationStatus(for: .video) {
                         case .authorized:
-                            Toggle(isOn: $integrations.faceTrackingEnabled) {
+                            Toggle(isOn: $integrations.faceTrackingEnabled.animation()) {
                                 Text("Enabled")
+                            }
+                            
+                            if (integrations.faceTrackingEnabled) {
+                                HStack {
+                                    Label(integrations.leftEyePosition?.title() ?? "Unknown", systemImage: integrations.leftEyePosition?.systemImage() ?? "questionmark").frame(maxWidth: .infinity)
+                                    Label(integrations.rightEyePosition?.title() ?? "Unknown", systemImage: integrations.rightEyePosition?.systemImage() ?? "questionmark").frame(maxWidth: .infinity)
+                                }
+                                
+                                HStack {
+                                    Label(integrations.leftEyeShape?.title() ?? "Unknown", systemImage: integrations.leftEyeShape?.systemImage() ?? "questionmark").frame(maxWidth: .infinity)
+                                    Label(integrations.rightEyeShape?.title() ?? "Unknown", systemImage: integrations.rightEyeShape?.systemImage() ?? "questionmark").frame(maxWidth: .infinity)
+                                }
+                                
+                                Label("Tracking", systemImage: integrations.trackingIdentifier == nil ? "xmark" : "checkmark")
+                                    .foregroundColor(integrations.trackingIdentifier == nil ? .red : .green)
+                                    .frame(maxWidth: .infinity)
                             }
                             
                         case .denied:
@@ -116,7 +335,7 @@ struct ContentView: View {
                             }
                             
                         case .notDetermined:
-                            Toggle(isOn: $integrations.faceTrackingEnabled) {
+                            Toggle(isOn: $integrations.faceTrackingEnabled.animation()) {
                                 Text("Enabled")
                                     .onAppear() {
                                         if integrations.faceTrackingEnabled {
