@@ -81,8 +81,62 @@ struct ContentView: View {
             Form {
                 Section(header: Text("Face Tracking"), content: {
                     if ARFaceTrackingConfiguration.isSupported {
-                        Toggle(isOn: $integrations.faceTrackingEnabled) {
-                            Text("Enabled")
+                        switch AVCaptureDevice.authorizationStatus(for: .video) {
+                        case .authorized:
+                            Toggle(isOn: $integrations.faceTrackingEnabled) {
+                                Text("Enabled")
+                            }
+                            
+                        case .denied:
+                            Text("You have denied this app's access to the camera.")
+                                .foregroundColor(.red)
+                            
+                            Button(action: {
+                                if let appSettings = URL(string: UIApplication.openSettingsURLString) {
+                                    if UIApplication.shared.canOpenURL(appSettings) {
+                                        UIApplication.shared.open(appSettings, options: [:], completionHandler: nil)
+                                    }
+                                }
+                            }) {
+                                Text("Visit Settings to grant permissions")
+                            }
+                            
+                        case .restricted:
+                            Text("You have restricted this app's access to the camera.")
+                                .foregroundColor(.red)
+                            
+                            Button(action: {
+                                if let appSettings = URL(string: UIApplication.openSettingsURLString) {
+                                    if UIApplication.shared.canOpenURL(appSettings) {
+                                        UIApplication.shared.open(appSettings, options: [:], completionHandler: nil)
+                                    }
+                                }
+                            }) {
+                                Text("Visit Settings to grant permissions")
+                            }
+                            
+                        case .notDetermined:
+                            Toggle(isOn: $integrations.faceTrackingEnabled) {
+                                Text("Enabled")
+                                    .onAppear() {
+                                        if integrations.faceTrackingEnabled {
+                                            AVCaptureDevice.requestAccess(for: .video) { granted in
+                                                if !granted {
+                                                    integrations.faceTrackingEnabled = false
+                                                }
+                                            }
+                                        }
+                                    }
+                                    .onChange(of: integrations.faceTrackingEnabled) {
+                                        if integrations.faceTrackingEnabled {
+                                            AVCaptureDevice.requestAccess(for: .video) { granted in
+                                                if !granted {
+                                                    integrations.faceTrackingEnabled = false
+                                                }
+                                            }
+                                        }
+                                    }
+                            }
                         }
                     } else {
                         Text("This device does not support face tracking.")
@@ -133,6 +187,7 @@ struct ContentView: View {
             }
             .navigationBarTitle("ARKit-UDP")
         }
+        .navigationViewStyle(StackNavigationViewStyle())
     }
 }
 
