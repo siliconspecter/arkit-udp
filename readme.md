@@ -15,7 +15,7 @@ enabled, all detected faces will be forwarded as follows:
 
 | Byte | Description                                                                                                                                                                                      |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 124  | Length of command.                                                                                                                                                                               |
+| 128  | Length of command.                                                                                                                                                                               |
 | 0    |                                                                                                                                                                                                  |
 | 0    |                                                                                                                                                                                                  |
 | 0    |                                                                                                                                                                                                  |
@@ -136,6 +136,10 @@ enabled, all detected faces will be forwarded as follows:
 | 28   |                                                                                                                                                                                                  |
 | 215  |                                                                                                                                                                                                  |
 | 16   | 0 = neutral, 0.55 = left frown.                                                                                                                                                                  |
+| 160  |                                                                                                                                                                                                  |
+| 141  |                                                                                                                                                                                                  |
+| 254  |                                                                                                                                                                                                  |
+| 16   | 0 = neutral, 0.55 = right frown.                                                                                                                                                                  |
 | 160  |                                                                                                                                                                                                  |
 | 141  |                                                                                                                                                                                                  |
 | 254  |                                                                                                                                                                                                  |
