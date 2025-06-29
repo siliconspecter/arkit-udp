@@ -143,6 +143,7 @@ class Integrations : NSObject, ObservableObject, ARSessionDelegate {
     var rightEyePosition: EyePosition?
     var rightEyeShape: EyeShape?
     private var arSession: ARSession?
+    private var queuedBytes = Data()
     
     @AppStorage("ContentView.faceTrackingEnabled") private var faceTrackingEnabledBool = false
     
@@ -262,6 +263,14 @@ class Integrations : NSObject, ObservableObject, ARSessionDelegate {
             self.rightEyeShape = nil
             objectWillChange.send()
         }
+    }
+
+    private func appendBlendShape(_ arFaceAnchor: ARFaceAnchor, _ blendShapeLocation: ARFaceAnchor.BlendShapeLocation) -> Void {
+        append(Float(truncating: arFaceAnchor.getBlendShape(blendShapeLocation: blendShapeLocation)!))
+    }
+
+    private func append(_ value: Float) -> Void {
+        queuedBytes.append(contentsOf: withUnsafeBytes(of: value.bitPattern.littleEndian) { Data($0) })
     }
     
     func session(_ session: ARSession, didUpdate anchors: [ARAnchor]) {
