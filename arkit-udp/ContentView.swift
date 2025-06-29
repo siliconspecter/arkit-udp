@@ -150,7 +150,34 @@ class Integrations : NSObject, ObservableObject, ARSessionDelegate {
         get { self.faceTrackingEnabledBool }
         set {
             self.faceTrackingEnabledBool = newValue
-            applySettings(faceTrackingEnabled: faceTrackingEnabled)
+            applySettings(faceTrackingEnabled: faceTrackingEnabled, udpConnectionEnabled: udpConnectionEnabled)
+        }
+    }
+
+    @AppStorage("ContentView.xOffset") private var xOffsetDouble: Double?
+
+    var xOffset: Float? {
+        get { self.xOffsetDouble.flatMap { Float($0) } }
+        set {
+            self.xOffsetDouble = newValue.map { Double($0) }
+        }
+    }
+
+    @AppStorage("ContentView.yOffset") private var yOffsetDouble: Double?
+
+    var yOffset: Float? {
+        get { self.yOffsetDouble.flatMap { Float($0) } }
+        set {
+            self.yOffsetDouble = newValue.map { Double($0) }
+        }
+    }
+
+    @AppStorage("ContentView.zOffset") private var zOffsetDouble: Double?
+
+    var zOffset: Float? {
+        get { self.zOffsetDouble.flatMap { Float($0) } }
+        set {
+            self.zOffsetDouble = newValue.map { Double($0) }
         }
     }
     
@@ -286,9 +313,11 @@ struct ContentView: View {
                     if ARFaceTrackingConfiguration.isSupported {
                         switch AVCaptureDevice.authorizationStatus(for: .video) {
                         case .authorized:
-                            Toggle(isOn: $integrations.faceTrackingEnabled.animation()) {
+                            Toggle(isOn: $integrations.faceTrackingEnabled.animation())
+                            {
                                 Text("Enabled")
                             }
+                            .disabled(integrations.xOffset == nil || integrations.yOffset == nil || integrations.zOffset == nil)
                             
                             if (integrations.faceTrackingEnabled) {
                                 HStack {
@@ -356,10 +385,33 @@ struct ContentView: View {
                                         }
                                     }
                             }
+                            .disabled(integrations.xOffset == nil || integrations.yOffset == nil || integrations.zOffset == nil)
                         }
                     } else {
                         Text("This device does not support face tracking.")
                             .foregroundColor(.red)
+                    }
+                    
+                    LabeledContent("Sensor Location") {
+                        HStack {
+                            TextField("0.0", value: $integrations.xOffset, format: .number)
+                                .disabled(integrations.faceTrackingEnabled)
+                                .frame(width: 50)
+                                .fixedSize(horizontal: true, vertical: false)
+                                .keyboardType(.numbersAndPunctuation)
+
+                            TextField("0.0", value: $integrations.yOffset, format: .number)
+                                .disabled(integrations.faceTrackingEnabled)
+                                .frame(width: 50)
+                                .fixedSize(horizontal: true, vertical: false)
+                                .keyboardType(.numbersAndPunctuation)
+
+                            TextField("0.0", value: $integrations.zOffset, format: .number)
+                                .disabled(integrations.faceTrackingEnabled)
+                                .frame(width: 50)
+                                .fixedSize(horizontal: true, vertical: false)
+                                .keyboardType(.numbersAndPunctuation)
+                        }
                     }
                 })
                 
